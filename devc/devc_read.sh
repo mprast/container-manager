@@ -24,8 +24,6 @@ if [ $? -eq 1 ]
    exit 1
 fi
 
-exit 0
-
 # make sure we get sudo *before* we start the dev container
 sudo echo 'h' > /dev/null
 
