@@ -5,7 +5,7 @@
 # everything is thrown away when you stop the container)
 # 
 
-# this is duplicated from ./devc_write.sh for now.
+# THIS is duplicated from ./devc_write.sh for now.
 # TODO(mprast): factor this method out
 function vblog {
     # BASH_ARGV contains the args to the script.
@@ -28,6 +28,6 @@ fi
 sudo echo 'h' > /dev/null
 
 # TODO(mprast): factor out the name of the actual container.
-vblog "Starting a devc container in read mode by using 'rkt run' with stage1-fly. Using a dummy process that just runs 'sleep 1d' over and over."
-sudo rkt run --insecure-options=image --stage1-name=coreos.com/rkt/stage1-fly:1.20.0 /home/mprast/.devc_build/devc.aci --exec "/bin/bash" -- -c "while [ true ]; do sleep 1d; done" &
+vblog "Starting a devc container in read mode by using 'rkt run' with stage1-fly. Running 'tail -f /dev/null' as a dummy process to keep the container going forever."
+sudo rkt run --insecure-options=image --stage1-name=coreos.com/rkt/stage1-fly:1.20.0 /home/mprast/.devc_build/devc.aci --exec "/usr/bin/tail" -- -f "/dev/null" &
 echo 'Dev container started!'

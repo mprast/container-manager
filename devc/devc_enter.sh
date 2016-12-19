@@ -37,7 +37,7 @@ else
    if [ ! "$devc_sha" ]
       then
       echo "no running dev container found! (no write container since $acbuilddir doesn't exist, no read 
-container since no running fedora container found by rkt list."
+      container since no running fedora container found by rkt list)." >&1
       exit 1
    fi
 

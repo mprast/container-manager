@@ -18,7 +18,7 @@ vblog "Checking if containers are already running using devc_list.sh..."
 $(dirname $0)/devc_list.sh > /dev/null
 if [ $? -eq 1 ]
    then 
-   echo 'One or more devc containers are already running. Check devc_list.sh.'
+   echo 'One or more devc containers are already running. Check devc_list.sh.' >&2
    exit 1
 fi
 
