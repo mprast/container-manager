@@ -72,6 +72,9 @@ sudo mount --make-rprivate dev
 vblog "Setting /sys to rprivate..."
 sudo mount --make-rprivate sys
 
+vblog "Setting /src to private (not rprivate!)..."
+sudo mount --make-private src
+
 # don't mount containers for write devc. doesn't work in read mode 
 # & we want to keep things consistent. Right way to do it is 
 # probably to have cman mount containers for investigation as 
@@ -90,6 +93,9 @@ sudo umount -l dev
 
 vblog "Unmounting /sys..."
 sudo umount -l sys
+
+vblog "Umounting /src..."
+sudo umount -l src
 
 #vblog "Unmounting /containers..."
 #sudo umount -l containers

@@ -102,6 +102,9 @@ if [ ! -e $acbuild_dir ]
 
   vblog "Mounting /sys..."
   sudo mount --rbind /sys sys
+  
+  vblog "Mounting $HOME/src to /src (with --bind, not --rbind!)..."
+  sudo mount --bind $HOME/src src
 
   # for now, don't mount /containers. doesn't work in read mode so we want to 
   # keep things consistent. right thing is probably to have cman mount\unmount 
