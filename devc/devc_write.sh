@@ -103,8 +103,12 @@ if [ ! -e $acbuild_dir ]
   vblog "Mounting /sys..."
   sudo mount --rbind /sys sys
 
-  vblog "Mounting /containers to the running rkt image dir in $RKT_HOME/pods/run"
-  sudo mount --rbind "$RKT_HOME/pods/run" containers
+  # for now, don't mount /containers. doesn't work in read mode so we want to 
+  # keep things consistent. right thing is probably to have cman mount\unmount 
+  # containers for investigation as needed in a separate dir.
+
+  #vblog "Mounting /containers to the running rkt image dir in $RKT_HOME/pods/run"
+  #sudo mount --rbind "$RKT_HOME/pods/run" containers
 
   popd > /dev/null 
   popd > /dev/null

@@ -37,6 +37,9 @@ fi
 sudo echo 'h' > /dev/null
 
 # TODO(mprast): factor out the name of the actual container.
-vblog "Starting a devc container in read mode by using 'rkt run' with stage1-fly. Running 'tail -f /dev/null' as a dummy process to keep the container going forever. Mounting the rkt running pod dir to /containers"
-sudo rkt run --insecure-options=image --stage1-name=coreos.com/rkt/stage1-fly:1.20.0 /home/mprast/.devc_build/devc.aci --volume containers,kind=host,source=$RKT_HOME/pods/run,recursive=true --mount volume=containers,target=/containers --exec "/usr/bin/tail" -- -f "/dev/null" &
+# Not mounting containers right now since mounting the 
+# entire container using --rbind produces some weird behavior
+# at 'rkt gc' time. TODO(mprast): fix this
+vblog "Starting a devc container in read mode by using 'rkt run' with stage1-fly. Running 'tail -f /dev/null' as a dummy process to keep the container going forever."
+sudo rkt run --insecure-options=image --stage1-name=coreos.com/rkt/stage1-fly:1.20.0 /home/mprast/.devc_build/devc.aci --exec "/usr/bin/tail" -- -f "/dev/null" &
 echo 'Dev container started!'
