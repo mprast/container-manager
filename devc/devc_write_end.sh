@@ -75,6 +75,12 @@ sudo mount --make-rprivate sys
 vblog "Setting /src to private (not rprivate!)..."
 sudo mount --make-private src
 
+vblog "Setting /root/.stack to private (not rprivate!)..."
+sudo mount --make-private root/.stack
+
+#vblog "Setting /ssh_agent to private (not rprivate!)..."
+#sudo mount --make-private ssh_agent
+
 # don't mount containers for write devc. doesn't work in read mode 
 # & we want to keep things consistent. Right way to do it is 
 # probably to have cman mount containers for investigation as 
@@ -94,8 +100,14 @@ sudo umount -l dev
 vblog "Unmounting /sys..."
 sudo umount -l sys
 
-vblog "Umounting /src..."
+vblog "Unmounting /src..."
 sudo umount -l src
+
+vblog "Unmounting /root/.stack..."
+sudo umount -l root/.stack
+
+vblog "Unmounting /ssh_agent..."
+sudo umount -l ssh_agent
 
 #vblog "Unmounting /containers..."
 #sudo umount -l containers

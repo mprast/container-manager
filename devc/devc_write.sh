@@ -102,9 +102,18 @@ if [ ! -e $acbuild_dir ]
 
   vblog "Mounting /sys..."
   sudo mount --rbind /sys sys
-  
+
   vblog "Mounting $HOME/src to /src (with --bind, not --rbind!)..."
   sudo mount --bind $HOME/src src
+
+  # stack needs this to store GHC in. 
+  # TODO(mprast): move to building inside of a docker container that has 
+  # GHC (stack has built-in support for this)
+  vblog "Mounting $HOME/.stack to /root/.stack (with --bind, not --rbind!)..."
+  sudo mount --bind $HOME/.stack root/.stack 
+
+  vblog "Mounting $HOME/ssh_agent to /ssh_agent (with --bind, not --rbind!)..."
+  sudo mount --bind $HOME/ssh_agent ssh_agent
 
   # for now, don't mount /containers. doesn't work in read mode so we want to 
   # keep things consistent. right thing is probably to have cman mount\unmount 
