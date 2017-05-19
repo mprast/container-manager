@@ -41,6 +41,6 @@ sudo echo 'h' > /dev/null
 # entire container using --rbind produces some weird behavior
 # at 'rkt gc' time. TODO(mprast): fix this
 vblog "Starting a devc container in read mode by using 'rkt run' with stage1-fly. Running 'tail -f /dev/null' as a dummy process to keep the container going forever. Mounting $HOME/src to /src. Mounting /etc/passwd to /etc/passwd so I can be me."
-sudo rkt run --insecure-options=image --stage1-name=coreos.com/rkt/stage1-fly:1.20.0 /home/mprast/.devc_build/devc.aci --volume src,kind=host,source="$HOME/src",readOnly=false --mount volume=src,target=/src --volume ssh-agent,kind=host,source="$HOME/ssh_agent",readOnly=false --mount volume=ssh-agent,target=/ssh_agent --volume stack,kind=host,sounce="$HOME/.stack",readOnly=false --mount volume=stack,target=/root/.stack --exec "/usr/bin/tail" -- -f "/dev/null" &
+sudo rkt run --insecure-options=image --stage1-name=coreos.com/rkt/stage1-fly:1.20.0 /home/mprast/.devc_build/devc.aci --volume src,kind=host,source="$HOME/src",readOnly=false --mount volume=src,target=/src --volume ssh-agent,kind=host,source="$HOME/ssh_agent",readOnly=false --mount volume=ssh-agent,target=/ssh_agent --volume stack,kind=host,source="$HOME/.stack",readOnly=false --mount volume=stack,target=/root/.stack --exec "/usr/bin/tail" -- -f "/dev/null" &
 
 echo 'Dev container started!'
