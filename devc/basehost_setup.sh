@@ -4,22 +4,58 @@ then
     exit 1		
 fi
 
-acbuild begin docker://fedora
+echo 'pulling basehost from docker://fedora'
+basehost_container_id=$(buildah from docker://fedora)
 
 # for now let's not make everybody's images 40MB larger...
-# acbuild run 'dnf remove vim-minimal -y'
-# acbuild run 'dnf install vim -y'
-acbuild run -- dnf install procps-ng -y
-acbuild run -- dnf install findutils -y
-acbuild run -- dnf install man -y
-acbuild run -- dnf install man-pages -y
-acbuild run -- echo 'export TERM=screen.xterm-256color' >> ~root/.bashrc
-acbuild run -- echo 'export SSH_AUTH_SOCK=/ssh_agent/ssh_agent.socket' >> ~root/.bashrc
-acbuild run -- echo 'export PATH' >> ~root/.bashrc
+# buildah run 'dnf remove vim-minimal -y'
+# buildah run 'dnf install vim -y'
+
+# dnf.conf includes the line 'tsflags=nodocs', which 
+# will prevent any manpages from ever being installed. 
+# this is a good way to keep container sizes small, but 
+# since we'll be using this container for development 
+# we actually do want the docs in there. need to 
+# remove that line from the config
+echo "remove 'tsflags=nodocs' from /etc/dnf/dnf.conf so we can install man pages"
+buildah run $basehost_container_id -- sed -i '/tsflags=nodocs/d' /etc/dnf/dnf.conf
+
+# provides common utilities that allow 
+# you to interact with /proc. these 
+# include ps, top, and kill.
+echo 'installing procps-ng...'
+buildah run $basehost_container_id -- dnf install procps-ng -y
+
+# adds find and xargs
+echo 'installing findutils...'
+buildah run $basehost_container_id -- dnf install findutils -y
+
+echo 'installing man and man-pages...'
+buildah run $basehost_container_id -- dnf install man -y
+buildah run $basehost_container_id -- dnf install man-pages -y
+
+echo 'adding TERM=screen.xterm-256color to .bashrc...'
+buildah run $basehost_container_id -- sed -i '$a\export TERM=screen.xterm-256color' /root/.bashrc
+
+echo 'adding SSH_AUTH_SOCK=/ssh_agent/ssh_agent.socket to .bashrc (for ssh agent forwarding)...'
+buildah run $basehost_container_id -- sed -i '$a\export SSH_AUTH_SOCK=\/ssh_agent\/ssh_agent.socket' /root/.bashrc
+
+echo 'adding PATH to .bashrc...'
+buildah run $basehost_container_id -- sed -i '$a\export PATH' /root/.bashrc
+
 # $HOME doesn't get set inside the fedora container image...we need 
 # to set it ourselves. insert it at the start of the file so 
 # we have it before running /etc/bashrc
-acbuild run -- sed -i "1i\export HOME='/root'" ~root/.bashrc
+echo 'adding HOME=/root to the very start of .bashrc...'
+buildah run $basehost_container_id -- sed -i "1i\export HOME='/root'" /root/.bashrc
 
-acbuild write 'fedora_basehost_v1.aci'
-acbuild end
+basehost_name=`date +fedora_basehost_%Y_%m_%d`
+
+# this'll fail if the dir exists already but that's fine
+mkdir /etc/containers/.devc_images/$basehost_name 2>/dev/null
+
+echo "storing the new basehost image in /etc/containers/.devc_images/$basehost_name..."
+# TODO(mprast): is there a better place for the images to go?
+buildah commit $basehost_container_id dir:/etc/containers/.devc_images/$basehost_name
+
+echo 'Basehost image successfully configured!'
