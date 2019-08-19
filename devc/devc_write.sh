@@ -1,8 +1,16 @@
 #! /bin/bash
-# Starts the dev container in 'record-mode'. Record mode remembers whatever 
-# you do in the container and allows you to either save your changes or get 
-# rid of them. Call devc_end.sh once you're done with your changes. 
+# Starts the dev container. Once started you'll be 
+# able to enter with devc_enter.sh. The container 
+# will remember whatever you do to it - when you 
+# shut it down with devc_down.sh you will have 
+# the option to save or discard your changes.
 # Supply -v to this script to get verbose mode.
+
+if [ $EUID -eq 0 ]
+then
+    echo 'Please do not run this as root. The script will ask for sudo when it needs elevated privileges. Thanks!'
+    exit 1
+fi
 
 # verbose log, not video blog :)
 function vblog { 
@@ -14,117 +22,55 @@ function vblog {
     fi 
 }
 
-vblog "Checking if containers are already running using devc_list.sh..."
-$(dirname $0)/devc_list.sh > /dev/null
+vblog "Checking if containers are already running using devc_status.sh..."
+$(dirname $0)/devc_status.sh > /dev/null
 if [ $? -eq 1 ]
    then 
-   echo 'One or more devc containers are already running. Check devc_list.sh.' >&2
+   echo 'A devc container is already running. Check devc_status.sh.' >&2
    exit 1
 fi
 
 # exits immediately if something errors out
 set -e 
 
-rkt_home_missing_msg=$(cat <<MSG
-Could not start dev container in record mode: RKT_HOME needs to be set. This should point to the data directory that rkt uses (usually /var/lib/rkt); it is usually set by the scripts that provision the machine. If you installed rkt manually on this host you will need to set it yourself. 
+buildah_missing_msg=$(cat <<MSG
+devc uses buildah to create and run images. looks like 'which buildah' didnt find anything. please install buildah on this machine to continue.
 MSG
 )
 
-# shorthand; writes message to STERR & exits if var is missing
-: "${RKT_HOME:? $rkt_home_missing_msg}"
-
-acbuild_missing_msg=$(cat <<MSG
-record mode uses acbuild to create a new image for you. looks like 'which acbuild' didnt find anything. please install acbuild on this machine to continue.
-MSG
-)
-
-if !(which acbuild >/dev/null 2>/dev/null) then 
-    echo $acbuild_missing_msg >&2
+if !(which buildah >/dev/null 2>/dev/null) then 
+    echo $buildah_missing_msg >&2
     exit 1
 fi
 
-username=$(whoami)
-build_dir="/home/$username/.devc_build"
-if [ ! -e $build_dir ]
-   then
-   vblog "Creating devc build directory ($build_dir)..."
-   mkdir $build_dir 
-fi
+vblog "Creating a new container from devc_local:latest..."
+container_id=$(sudo buildah from docker-daemon:devc_local:latest)
+vblog "Mounting the filesystem for container $container_id..."
+build_dir=$(sudo buildah mount $container_id)
 
-acbuild_dir=$build_dir/.acbuild
-# VV not needed for now, since the call to devc_list will catch this case. 
-# if we re-architect things we might want to consider putting it back.
+vblog "Setting up crucial mountpoints in the mounted container (these let the container see the outside world)..."
 
-#acbuild_found_msg=$(cat <<MSG
-#Found an existing acbuild build image in ($acbuild_dir). This probably indicates 
-#that you started a container in record mode without discarding it or saving it.
-#If you created this image yourself please discard it and create a new one to 
-#use - we do some special setup to get record mode to work!
-#Do you want to (d)iscard the image, (c)ontinue, or (a)bort?:
-#MSG
-#)
-#
-#if [ -e $acbuild_dir ]
-#  then
-#  echo $acbuild_found_msg 
-#  read response
-#  if [ $response == 'd' ]
-#    then
-#    vblog "Calling into 'devc_write_end.sh' to clean up the image..."
-#    $(dirname $0)/devc_write_end.sh -v discard
-#    exit 0
-#  fi
-#
-#  if [ $response == 'a' ]
-#    then 
-#    echo 'Aborting'
-#    exit 1
-#  fi
-#fi 
+vblog "Mounting /proc..."
+sudo mount --rbind /proc $build_dir/proc
 
-if [ ! -e $acbuild_dir ]
-  then
-  pushd $build_dir >/dev/null
-  vblog "Creating a new build image with 'acbuild begin devc.aci'..."
-  sudo acbuild begin ./devc.aci
-  
-  rootdir=$acbuild_dir/currentaci/rootfs
+vblog "Mounting /dev..."
+sudo mount --rbind /dev $build_dir/dev
 
-  vblog "Setting up crucial mountpoints in $rootdir (these let the container see the outside world)..."
+vblog "Mounting /sys..."
+sudo mount --rbind /sys $build_dir/sys
 
-  pushd $rootdir > /dev/null
+vblog "Mounting $HOME/src to /src (with --bind, not --rbind!)..."
+sudo mkdir $build_dir/src
+sudo mount --bind $HOME/src $build_dir/src
 
-  vblog "Mounting /proc..."
-  sudo mount --rbind /proc proc
+vblog "Mounting $HOME/ssh_agent to /ssh_agent (with --bind, not --rbind!)..."
+sudo mkdir $build_dir/ssh_agent
+sudo mount --bind $HOME/ssh_agent $build_dir/ssh_agent
 
-  vblog "Mounting /dev..."
-  sudo mount --rbind /dev dev
+# for now, don't mount /containers. didn't work using acbuild and I don't have 
+# time to try it again with buildah.
 
-  vblog "Mounting /sys..."
-  sudo mount --rbind /sys sys
+#vblog "Mounting /containers to the running rkt image dir in $RKT_HOME/pods/run"
+#mount --rbind "$RKT_HOME/pods/run" containers
 
-  vblog "Mounting $HOME/src to /src (with --bind, not --rbind!)..."
-  sudo mount --bind $HOME/src src
-
-  # stack needs this to store GHC in. 
-  # TODO(mprast): move to building inside of a docker container that has 
-  # GHC (stack has built-in support for this)
-  vblog "Mounting $HOME/.stack to /root/.stack (with --bind, not --rbind!)..."
-  sudo mount --bind $HOME/.stack root/.stack 
-
-  vblog "Mounting $HOME/ssh_agent to /ssh_agent (with --bind, not --rbind!)..."
-  sudo mount --bind $HOME/ssh_agent ssh_agent
-
-  # for now, don't mount /containers. doesn't work in read mode so we want to 
-  # keep things consistent. right thing is probably to have cman mount\unmount 
-  # containers for investigation as needed in a separate dir.
-
-  #vblog "Mounting /containers to the running rkt image dir in $RKT_HOME/pods/run"
-  #sudo mount --rbind "$RKT_HOME/pods/run" containers
-
-  popd > /dev/null 
-  popd > /dev/null
-fi
-
-
-echo "Ready to record!"
+echo "Dev container is ready to go! You can enter it with devc_enter.sh."
