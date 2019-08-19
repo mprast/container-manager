@@ -4,6 +4,9 @@ then
     exit 1		
 fi
 
+# exits immediately if something errors out
+set -e
+
 echo 'pulling basehost from docker://fedora'
 basehost_container_id=$(buildah from docker://fedora)
 
@@ -51,11 +54,10 @@ buildah run $basehost_container_id -- sed -i "1i\export HOME='/root'" /root/.bas
 
 basehost_name=`date +fedora_basehost_%Y_%m_%d`
 
-# this'll fail if the dir exists already but that's fine
-mkdir /etc/containers/.devc_images/$basehost_name 2>/dev/null
+echo "storing the new basehost image in the docker daemon under $basehost_name:latest..."
+buildah commit $basehost_container_id docker-daemon:$basehost_name:latest
 
-echo "storing the new basehost image in /etc/containers/.devc_images/$basehost_name..."
-# TODO(mprast): is there a better place for the images to go?
-buildah commit $basehost_container_id dir:/etc/containers/.devc_images/$basehost_name
+echo "tagging the new basehost as devc_local:latest..."
+docker tag $basehost_name:latest devc_local:latest
 
 echo 'Basehost image successfully configured!'
