@@ -47,7 +47,7 @@ if !(which buildah >/dev/null 2>/dev/null) then
 fi
 
 vblog "Creating a new container from devc_local:latest..."
-container_id=$(sudo buildah from docker-daemon:devc_local:latest)
+container_id=$(sudo buildah from --pull-always docker-daemon:devc_local:latest)
 vblog "Mounting the filesystem for container $container_id..."
 build_dir=$(sudo buildah mount $container_id)
 
