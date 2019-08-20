@@ -12,9 +12,6 @@ then
     exit 1
 fi
 
-# exit if any command fails
-set -e
-
 # verbose log, not video blog :)
 function vblog { 
     # BASH_ARGV contains the args to the script. 
@@ -29,7 +26,7 @@ vblog "Checking if containers are already running using devc_status.sh..."
 $(dirname $0)/devc_status.sh > /dev/null
 if [ $? -eq 1 ]
    then 
-   echo 'A devc container is already running. Check devc_status.sh.' >&2
+   echo 'A devc container is already running. Check devc_status.sh.'
    exit 1
 fi
 
@@ -63,11 +60,15 @@ vblog "Mounting /sys..."
 sudo mount --rbind /sys $build_dir/sys
 
 vblog "Mounting $HOME/src to /src (with --bind, not --rbind!)..."
-sudo mkdir $build_dir/src
+if sudo [ ! -d "$build_dir/src" ]; then
+    sudo mkdir $build_dir/src
+fi
 sudo mount --bind $HOME/src $build_dir/src
 
 vblog "Mounting $HOME/ssh_agent to /ssh_agent (with --bind, not --rbind!)..."
-sudo mkdir $build_dir/ssh_agent
+if sudo [ ! -d "$build_dir/ssh_agent" ]; then
+    sudo mkdir $build_dir/ssh_agent
+fi
 sudo mount --bind $HOME/ssh_agent $build_dir/ssh_agent
 
 # for now, don't mount /containers. didn't work using acbuild and I don't have 
