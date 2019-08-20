@@ -17,30 +17,20 @@ function vblog {
     fi
 }
 
-containers_running=false
+# the convention when running containers in buildah is 
+# to take the image name and append -working-container 
+# to it, so we're interested in 'devc_local-working-container'.
+# if somebody accidentally creates more containers from the 
+# devc_local image, we'll get things like 
+# 'devc_local-working-container-2', etc. we're only concerned 
+# whether 'devc_local-working-container' exists or not.
+buildah_listing=$(sudo buildah containers -f name=devc_local-working-container --format "{{.ContainerName}}" | tac | sort | head -n 1)
 
-# TODO(mprast): factor out build dir
-username=$(whoami)
-acbuilddir="/home/$username/.devc_build/.acbuild"
-vblog "checking for a running write container by seeing if $acbuilddir exists..."
-if [ -e $acbuilddir ]
+if [ ${buildah_listing:-''} != "devc_local-working-container" ]
    then
-   containers_running=true
-   echo "There's a dev container running in write mode."
-fi
-
-devc_sha=$(rkt list | perl -ane 'print $F[0] if $F[2] =~ /fedora:latest/ && $F[3] =~ /running/')
-vblog "checking for a running read container by seeing if there's a fedora container in the 'running' state using 'rkt list'..."
-if [ "$devc_sha" ]
-   then
-   containers_running=true
-   echo "There's a dev container running in read mode."
-fi
-
-if ! $containers_running 
-   then
-   echo "There are no devc containers running."
+   echo "There isn't a devc container running."
    exit 0
 else
+   echo "There's a devc container running under $buildah_listing."
    exit 1
 fi
