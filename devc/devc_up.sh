@@ -12,6 +12,9 @@ then
     exit 1
 fi
 
+# exit if any command fails
+set -e
+
 # verbose log, not video blog :)
 function vblog { 
     # BASH_ARGV contains the args to the script. 

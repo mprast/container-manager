@@ -47,10 +47,13 @@ echo 'adding PATH to .bashrc...'
 buildah run $basehost_container_id -- sed -i '$a\export PATH' /root/.bashrc
 
 # $HOME doesn't get set inside the fedora container image...we need 
-# to set it ourselves. insert it at the start of the file so 
-# we have it before running /etc/bashrc
-echo 'adding HOME=/root to the very start of .bashrc...'
-buildah run $basehost_container_id -- sed -i "1i\export HOME='/root'" /root/.bashrc
+# to set it ourselves. insert it into /.bashrc, which will get run when 
+# we enter the shell. source ~/.bashrc after so we get all the stuff in 
+# our 'regular' bashrc
+echo 'adding HOME=/root to the very start of /.bashrc...'
+buildah run $basehost_container_id -- touch /.bashrc
+buildah run $basehost_container_id -- sed -i "$a\export HOME='/root'" /.bashrc
+buildah run $basehost_container_id -- sed -i '$a\source ~/.bashrc' /.bashrc
 
 basehost_name=`date +fedora_basehost_%Y_%m_%d`
 
