@@ -1,12 +1,9 @@
 #! /bin/bash
-# Stops a dev container that's running in write mode. 
+# Stops a dev container. 
 # Based on the args you pass to this script, will 
-# either write the changes out to an aci or discard 
+# either write the changes out to an image or discard 
 # them. Write 'save' or 'discard'. 
 # Pass -v for verbose mode.
-
-# exit if any command fails
-set -e
 
 # this is duplicated from ./devc_write.sh for now.
 # TODO(mprast): factor this method out
@@ -19,10 +16,21 @@ function vblog {
     fi
 }
 
+vblog "Checking if containers are already running using devc_status.sh..."
+$(dirname $0)/devc_status.sh > /dev/null
+if [ $? -eq 0 ]
+   then
+   echo 'No devc container is currently running. Try devc_up.sh.' >&2
+   exit 1
+fi
+
+# exit if any command fails
+set -e
+
 save_mode=false
 if [ "$1" == 'save' ] || [ "$2" = 'save' ]
    then 
-   echo "Saving your changes to devc.aci..."
+   echo "Saving your changes..."
    save_mode=true
 elif [ "$1" == 'discard' ] || [ "$2" == 'discard' ]
    then
@@ -33,58 +41,28 @@ else
    exit 1
 fi  
 
-# assuming $RKT_HOME is set and acbuild is 
-# installed on this machine - otherwise 
-# the user wouldn't have been able to 
-# start the container
-
-# TODO(mprast): factor the builddir 
-# config out
-username=$(whoami)
-build_dir="/home/$username/.devc_build"
-acbuild_dir="$build_dir/.acbuild"
-
-no_acbuilddir_msg=$(cat <<MSG
-The acbuild build dir $build_dir does not exist. This indicates that no 
-dev container is running in write mode. Are you sure your container 
-isn't running in read mode, or that you didn't start your container 
-as a different user?
-MSG
-)
-
-if [ ! -e $acbuild_dir ]
-   then 
-   echo $no_acbuilddir_msg
-   exit 1
-fi
-
 vblog "Making mountpoints in the dev container private so unmount events don't propagate back to the host..."
 
-rootdir=$acbuild_dir/currentaci/rootfs
-pushd $rootdir > /dev/null
+build_dir=$(sudo buildah mount devc_local-working-container)
 
 vblog "Setting /proc to rprivate..."
-sudo mount --make-rprivate proc
+sudo mount --make-rprivate $build_dir/proc
 
 vblog "Setting /dev to rprivate..."
-sudo mount --make-rprivate dev
+sudo mount --make-rprivate $build_dir/dev
 
 vblog "Setting /sys to rprivate..."
-sudo mount --make-rprivate sys
+sudo mount --make-rprivate $build_dir/sys
 
 vblog "Setting /src to private (not rprivate!)..."
-sudo mount --make-private src
-
-vblog "Setting /root/.stack to private (not rprivate!)..."
-sudo mount --make-private root/.stack
+sudo mount --make-private $build_dir/src
 
 #vblog "Setting /ssh_agent to private (not rprivate!)..."
 #sudo mount --make-private ssh_agent
 
-# don't mount containers for write devc. doesn't work in read mode 
-# & we want to keep things consistent. Right way to do it is 
-# probably to have cman mount containers for investigation as 
-# needed.
+# don't mount containers for write devc. didn't work 
+# using acbuild and I don't have the time to make 
+# it work with buildah
 
 #vblog "Setting /containers to rprivate..."
 #sudo mount --make-rprivate containers
@@ -92,42 +70,35 @@ sudo mount --make-private root/.stack
 vblog "Unmounting mountpoints with umount -l..."
 
 vblog "Unmounting /proc..."
-sudo umount -l proc
+sudo umount -l $build_dir/proc
 
 vblog "Unmounting /dev..."
-sudo umount -l dev
+sudo umount -l $build_dir/dev
 
 vblog "Unmounting /sys..."
-sudo umount -l sys
+sudo umount -l $build_dir/sys
 
 vblog "Unmounting /src..."
-sudo umount -l src
-
-vblog "Unmounting /root/.stack..."
-sudo umount -l root/.stack
+sudo umount -l $build_dir/src
 
 vblog "Unmounting /ssh_agent..."
-sudo umount -l ssh_agent
+sudo umount -l $build_dir/ssh_agent
 
 #vblog "Unmounting /containers..."
 #sudo umount -l containers
 
-popd > /dev/null
-
-pushd $build_dir > /dev/null
 if [ $save_mode = true ]
    then
-   if [ -e './devc.aci' ]
-      then  
-      backup_fn="./devc_backup_$(date +'%m_%d_%Y_%I%p_%M')"
-      vblog "moving the old devc.aci to $backup_fn..."
-      mv ./devc.aci "$backup_fn"
-   fi
-   echo "Saving your changes to 'devc.aci' with acbuild write. This will take a few minutes..."
-   sudo acbuild write ./devc.aci
-fi
-vblog "Clearing the build dir with acbuild end..."
-sudo acbuild end
-popd > /dev/null
 
+   image_name="devc_local_$(date +'%Y_%m_%d_%H_%M')"
+   echo "Saving your changes to $image_name with buildah commit. This will take a second..."
+   sudo buildah commit devc_local-working-container docker-daemon:$image_name:latest
+
+   echo "Tagging $image_name as devc_local:latest..."
+   sudo docker tag $image_name:latest devc_local:latest
+fi
+
+vblog 'Clearing the devc container from buildah by running buildah umount and buildah rm...'
+sudo buildah umount devc_local-working-container
+sudo buildah rm devc_local-working-container
 echo "Done!"
