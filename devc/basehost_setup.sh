@@ -51,9 +51,11 @@ buildah run $basehost_container_id -- sed -i '$a\export PATH' /root/.bashrc
 # we enter the shell. source ~/.bashrc after so we get all the stuff in 
 # our 'regular' bashrc
 echo 'adding HOME=/root to the very start of /.bashrc...'
-buildah run $basehost_container_id -- touch /.bashrc
-buildah run $basehost_container_id -- sed -i "$a\export HOME='/root'" /.bashrc
-buildah run $basehost_container_id -- sed -i '$a\source ~/.bashrc' /.bashrc
+# weird hack to get output redirection working. I couldn't figure out how to 
+# use sed here because /.bashrc doesn't exist yet.
+buildah run $basehost_container_id -- bash -c "echo '' > /.bashrc"
+buildah run $basehost_container_id -- sed -i '$a\export HOME=\/root' /.bashrc
+buildah run $basehost_container_id -- sed -i '$a\source ~\/.bashrc' /.bashrc
 
 basehost_name=`date +fedora_basehost_%Y_%m_%d`
 
