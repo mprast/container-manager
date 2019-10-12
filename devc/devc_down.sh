@@ -92,7 +92,7 @@ if [ $save_mode = true ]
 
    image_name="devc_local_$(date +'%Y_%m_%d_%H_%M')"
    echo "Saving your changes to $image_name with buildah commit. This will take a second..."
-   sudo buildah commit devc_local-working-container docker-daemon:$image_name:latest
+   sudo buildah commit --squash devc_local-working-container docker-daemon:$image_name:latest
 
    echo "Tagging $image_name as devc_local:latest..."
    sudo docker tag $image_name:latest devc_local:latest
