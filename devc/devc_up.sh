@@ -59,11 +59,11 @@ sudo mount --rbind /dev $build_dir/dev
 vblog "Mounting /sys..."
 sudo mount --rbind /sys $build_dir/sys
 
-vblog "Mounting $HOME/src to /src (with --bind, not --rbind!)..."
+vblog "Mounting /src to /src (with --bind, not --rbind!)..."
 if sudo [ ! -d "$build_dir/src" ]; then
     sudo mkdir $build_dir/src
 fi
-sudo mount --bind $HOME/src $build_dir/src
+sudo mount --bind /src $build_dir/src
 
 vblog "Mounting $HOME/ssh_agent to /ssh_agent (with --bind, not --rbind!)..."
 if sudo [ ! -d "$build_dir/ssh_agent" ]; then
