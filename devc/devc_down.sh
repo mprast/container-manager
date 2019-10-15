@@ -37,7 +37,7 @@ elif [ "$1" == 'discard' ] || [ "$2" == 'discard' ]
    echo "Discarding your changes..."
    # do nothing 
 else
-   echo 'Usage: devc_write_end.sh [-v] (save|discard)'  
+   echo 'Usage: devc_down.sh [-v] (save|discard)'  
    exit 1
 fi  
 
@@ -53,6 +53,9 @@ sudo mount --make-rprivate $build_dir/dev
 
 vblog "Setting /sys to rprivate..."
 sudo mount --make-rprivate $build_dir/sys
+
+vblog "Setting /var/run/docker.sock to private (not rprivate!)..."
+sudo mount --make-private $build_dir/var/run/docker.sock
 
 vblog "Setting /src to private (not rprivate!)..."
 sudo mount --make-private $build_dir/src
@@ -77,6 +80,9 @@ sudo umount -l $build_dir/dev
 
 vblog "Unmounting /sys..."
 sudo umount -l $build_dir/sys
+
+vblog "Unmounting /var/run/docker.sock..."
+sudo umount -l $build_dir/var/run/docker.sock
 
 vblog "Unmounting /src..."
 sudo umount -l $build_dir/src

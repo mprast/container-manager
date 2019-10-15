@@ -59,6 +59,10 @@ sudo mount --rbind /dev $build_dir/dev
 vblog "Mounting /sys..."
 sudo mount --rbind /sys $build_dir/sys
 
+vblog "Mounting /var/run/docker.sock so we can talk to dockerd..."
+sudo touch $build_dir/var/run/docker.sock
+sudo mount --bind /var/run/docker.sock $build_dir/var/run/docker.sock
+
 vblog "Mounting /src to /src (with --bind, not --rbind!)..."
 if sudo [ ! -d "$build_dir/src" ]; then
     sudo mkdir $build_dir/src
