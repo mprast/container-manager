@@ -63,6 +63,12 @@ vblog "Mounting /var/run/docker.sock so we can talk to dockerd..."
 sudo touch $build_dir/var/run/docker.sock
 sudo mount --bind /var/run/docker.sock $build_dir/var/run/docker.sock
 
+vblog "Mounting global cache to /root/.yarn/berry/cache..."
+if sudo [ ! -d "$build_dir/root/.yarn/berry/cache" ]; then
+  sudo mkdir -p $build_dir/root/.yarn/berry/cache
+fi
+sudo mount --bind /root/.yarn/berry/cache $build_dir/root/.yarn/berry/cache
+
 vblog "Mounting /src to /src (with --bind, not --rbind!)..."
 if sudo [ ! -d "$build_dir/src" ]; then
     sudo mkdir $build_dir/src
