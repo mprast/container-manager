@@ -43,6 +43,8 @@ if !(which buildah >/dev/null 2>/dev/null) then
     exit 1
 fi
 
+echo 'Spinning up your dev environment! It will take a few minutes. This would be a good time to grab a drink or a snack if you want :)'
+
 vblog "Creating a new container from devc_local:latest..."
 container_id=$(sudo buildah from --pull-always docker-daemon:devc_local:latest)
 vblog "Mounting the filesystem for container $container_id..."
