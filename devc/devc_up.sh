@@ -61,6 +61,9 @@ sudo mount --rbind /dev $build_dir/dev
 vblog "Mounting /sys..."
 sudo mount --rbind /sys $build_dir/sys
 
+vblog "Mounting /tmp so the container size doesn't blow up..."
+sudo mount --rbind /tmp $build_dir/tmp
+
 vblog "Mounting /var/run/docker.sock so we can talk to dockerd..."
 sudo touch $build_dir/var/run/docker.sock
 sudo mount --bind /var/run/docker.sock $build_dir/var/run/docker.sock
