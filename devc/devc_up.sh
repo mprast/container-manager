@@ -68,6 +68,13 @@ vblog "Mounting /var/run/docker.sock so we can talk to dockerd..."
 sudo touch $build_dir/var/run/docker.sock
 sudo mount --bind /var/run/docker.sock $build_dir/var/run/docker.sock
 
+vblog "Mounting /var/snap/microk8s/common/run/containerd.sock so we can use ctr..."
+if sudo [ ! -d "$build_dir/run/containerd" ]; then
+  sudo mkdir -p $build_dir/run/containerd
+fi
+sudo touch $build_dir/run/containerd/containerd.sock
+sudo mount --bind /var/snap/microk8s/common/run/containerd.sock $build_dir/run/containerd/containerd.sock
+
 vblog "Mounting global cache to /root/.yarn/berry/cache..."
 if sudo [ ! -d "$build_dir/root/.yarn/berry/cache" ]; then
   sudo mkdir -p $build_dir/root/.yarn/berry/cache

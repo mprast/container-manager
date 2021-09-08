@@ -57,6 +57,9 @@ sudo mount --make-rprivate $build_dir/sys
 vblog "Setting /var/run/docker.sock to private (not rprivate!)..."
 sudo mount --make-private $build_dir/var/run/docker.sock
 
+vblog "Setting /run/containerd/containerd.sock to private (not rprivate!)..."
+sudo mount --make-private $build_dir/run/containerd/containerd.sock
+
 vblog "Setting /root/.yarn/berry/cache to rprivate..."
 sudo mount --make-rprivate $build_dir/root/.yarn/berry/cache
 
@@ -89,6 +92,9 @@ sudo umount -l $build_dir/tmp
 
 vblog "Unmounting /var/run/docker.sock..."
 sudo umount -l $build_dir/var/run/docker.sock
+
+vblog "Unmounting /run/containerd/containerd.sock..."
+sudo umount -l $build_dir/run/containerd/containerd.sock
 
 vblog "Unmounting /root/.yarn/berry/cache..."
 sudo umount -l $build_dir/root/.yarn/berry/cache
